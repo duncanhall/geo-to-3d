@@ -4,32 +4,81 @@
     <meta charset="UTF-8">
     <title>Geo to 3D</title>
     <style>
-        * { margin: 0; padding:0 }
-        canvas {width: 100%; height: 100%}
+        *, html, body { margin: 0; padding:0; background: #000000 }
     </style>
 </head>
 <body>
-    <script src="/lib/three.min.js"></script>
+    <script src="/lib/pixi.min.js"></script>
     <script>
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        var PADDING = 20;
+        var WIDTH = window.innerWidth - PADDING;
+        var HEIGHT = window.innerHeight - PADDING;
 
-        var renderer = new THREE.WebGLRenderer();
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        document.body.appendChild( renderer.domElement );
+        var _renderer = PIXI.autoDetectRenderer(WIDTH, HEIGHT, {antialias: true});
+        var _stage = new PIXI.Container();
+        var _graphics = new PIXI.Graphics();
 
-        var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-        var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-        var cube = new THREE.Mesh( geometry, material );
-        scene.add( cube );
+        _stage.interactive = true;
+        document.body.appendChild(_renderer.view);
+        _stage.addChild(_graphics);
 
-        camera.position.z = 5;
 
-        function render() {
-            requestAnimationFrame( render );
-            renderer.render( scene, camera );
+        function findGeoRange (coords) {
+            var temp = coords.concat();
+            var ABS_SE = {lat:-91, long:181};
+            var ABS_NW = {lat:91, long:-181};
+
+            var NORTH = temp.reduce(function (c1, c2) {return (c2.lat >= c1.lat) ? c2 : c1;}, ABS_SE);
+            var SOUTH = temp.reduce(function (c1, c2) {return (c2.lat <= c1.lat) ? c2 : c1;}, ABS_NW);
+            var EAST = temp.reduce(function (c1, c2) {return (c2.long >= c1.long) ? c2 : c1;}, ABS_NW);
+            var WEST = temp.reduce(function (c1, c2) {return (c2.long <= c1.long) ? c2 : c1;}, ABS_SE);
+
+            return {northWest:{lat:NORTH.lat, long:WEST.long}, southEast:{lat:SOUTH.lat, long:EAST.long}};
         }
-        render();
+
+        function latLongToCartesian (coords, cartesianWidth, cartesianHeight) {
+
+            var geoRange = findGeoRange(coords);
+            var latRange = geoRange.northWest.lat - geoRange.southEast.lat;
+            var longRange = geoRange.southEast.long - geoRange.northWest.long;
+            var north = geoRange.northWest.lat;
+            var west = geoRange.northWest.long;
+
+            var cartesian = coords.map(function (c) {
+                var y = ((north - c.lat) / latRange) * cartesianHeight;
+                var x = ((c.long - west ) / longRange) * cartesianWidth;
+                return {x:x, y:y}
+            });
+
+            return cartesian;
+        }
+
+
+        var coOrds = [
+            {lat:27.994401, long:-51.152344},
+            {lat:54.775346, long:-14.589844},
+            {lat:45.828799, long:14.941406},
+            {lat:65.219894, long:97.207031},
+            {lat:-37.996163, long:83.144531}
+        ];
+
+        var cartesian = latLongToCartesian(coOrds, WIDTH, HEIGHT);
+
+        drawPoints(cartesian);
+
+        function drawPoints (points) {
+            var temp = points.concat();
+            var first = temp.shift();
+
+            _graphics.clear();
+            _graphics.lineStyle(2, 0xFF0000, 1);
+            _graphics.moveTo(first.x, first.y);
+
+            temp.forEach(function (p) { _graphics.lineTo(p.x, p.y) });
+
+            _renderer.render(_stage);
+        }
+
     </script>
 </body>
 </html>
