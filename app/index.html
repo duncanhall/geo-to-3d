@@ -23,18 +23,6 @@
         _stage.addChild(_graphics);
 
 
-        function findGeoRange (coords) {
-            return coords.reduce(function (bounds, coord) {
-                return {
-                    n: Math.max(bounds.n, coord.lat),
-                    s: Math.min(bounds.s, coord.lat),
-                    e: Math.max(bounds.e, coord.long),
-                    w: Math.min(bounds.w, coord.long)
-                }
-            },
-            {n:-91, s:91, e:-181, w:181});
-        }
-
         function latLongToCartesian (coords, cartesianWidth, cartesianHeight) {
 
             var geoRange = coords.reduce(function (bounds, coord)
