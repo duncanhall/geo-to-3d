@@ -2,29 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Geo to 3D</title>
+    <title>Geo to Cartesian</title>
     <style>
-        *, html, body { margin: 0; padding:0; background: #000000 }
+        html, body { width: 100%; height: 100%; margin: 0; padding:0; background: #FFFFFF }
+        canvas { margin: 0; padding:0; background: #FFFFFF }
     </style>
 </head>
 <body>
-    <script src="/lib/pixi.min.js"></script>
+    <canvas id="geo-canvas"></canvas>
     <script>
         var PADDING = 20;
         var WIDTH = window.innerWidth - PADDING;
         var HEIGHT = window.innerHeight - PADDING;
 
-        var _renderer = PIXI.autoDetectRenderer(WIDTH, HEIGHT, {antialias: true});
-        var _stage = new PIXI.Container();
-        var _graphics = new PIXI.Graphics();
+        var _canvas = document.getElementById('geo-canvas');
+        var _context = _canvas.getContext('2d');
+        _canvas.width = WIDTH;
+        _canvas.height = HEIGHT;
 
-        _stage.interactive = true;
-        document.body.appendChild(_renderer.view);
-        _stage.addChild(_graphics);
+        var coordinates = [
+            {lat:27.994401, long:-51.152344},
+            {lat:54.775346, long:-14.589844},
+            {lat:45.828799, long:14.941406},
+            {lat:65.219894, long:97.207031},
+            {lat:-37.996163, long:83.144531}
+        ];
 
+        var cartesian = latLongToCartesian(coordinates, WIDTH, HEIGHT);
+        drawPoints(cartesian, true);
 
         function latLongToCartesian (coords, cartesianWidth, cartesianHeight) {
-
             var geoRange = coords.reduce(function (bounds, coord)
                 {
                     return {
@@ -46,30 +53,18 @@
             });
         }
 
-
-        var coOrds = [
-            {lat:27.994401, long:-51.152344},
-            {lat:54.775346, long:-14.589844},
-            {lat:45.828799, long:14.941406},
-            {lat:65.219894, long:97.207031},
-            {lat:-37.996163, long:83.144531}
-        ];
-
-        var cartesian = latLongToCartesian(coOrds, WIDTH, HEIGHT);
-
-        drawPoints(cartesian);
-
-        function drawPoints (points) {
+        function drawPoints (points, autoClose) {
             var temp = points.concat();
             var first = temp.shift();
 
-            _graphics.clear();
-            _graphics.lineStyle(2, 0xFF0000, 1);
-            _graphics.moveTo(first.x, first.y);
+            _context.clearRect(0, 0, _canvas.width, _canvas.height);
+            _context.beginPath();
+            _context.moveTo(first.x, first.y);
 
-            temp.forEach(function (p) { _graphics.lineTo(p.x, p.y) });
+            temp.forEach(function (p) { _context.lineTo(p.x, p.y) });
+            if (autoClose) _context.lineTo(first.x, first.y);
 
-            _renderer.render(_stage);
+            _context.stroke();
         }
 
     </script>
