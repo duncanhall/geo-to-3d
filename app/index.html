@@ -24,33 +24,38 @@
 
 
         function findGeoRange (coords) {
-            var temp = coords.concat();
-            var ABS_SE = {lat:-91, long:181};
-            var ABS_NW = {lat:91, long:-181};
-
-            var NORTH = temp.reduce(function (c1, c2) {return (c2.lat >= c1.lat) ? c2 : c1;}, ABS_SE);
-            var SOUTH = temp.reduce(function (c1, c2) {return (c2.lat <= c1.lat) ? c2 : c1;}, ABS_NW);
-            var EAST = temp.reduce(function (c1, c2) {return (c2.long >= c1.long) ? c2 : c1;}, ABS_NW);
-            var WEST = temp.reduce(function (c1, c2) {return (c2.long <= c1.long) ? c2 : c1;}, ABS_SE);
-
-            return {northWest:{lat:NORTH.lat, long:WEST.long}, southEast:{lat:SOUTH.lat, long:EAST.long}};
+            return coords.reduce(function (bounds, coord) {
+                return {
+                    n: Math.max(bounds.n, coord.lat),
+                    s: Math.min(bounds.s, coord.lat),
+                    e: Math.max(bounds.e, coord.long),
+                    w: Math.min(bounds.w, coord.long)
+                }
+            },
+            {n:-91, s:91, e:-181, w:181});
         }
 
         function latLongToCartesian (coords, cartesianWidth, cartesianHeight) {
 
-            var geoRange = findGeoRange(coords);
-            var latRange = geoRange.northWest.lat - geoRange.southEast.lat;
-            var longRange = geoRange.southEast.long - geoRange.northWest.long;
-            var north = geoRange.northWest.lat;
-            var west = geoRange.northWest.long;
+            var geoRange = coords.reduce(function (bounds, coord)
+                {
+                    return {
+                        n: Math.max(bounds.n, coord.lat),
+                        s: Math.min(bounds.s, coord.lat),
+                        e: Math.max(bounds.e, coord.long),
+                        w: Math.min(bounds.w, coord.long)
+                    }
+                },
+                {n:-91, s:91, e:-181, w:181});
 
-            var cartesian = coords.map(function (c) {
-                var y = ((north - c.lat) / latRange) * cartesianHeight;
-                var x = ((c.long - west ) / longRange) * cartesianWidth;
+            var latRange = geoRange.n - geoRange.s;
+            var longRange = geoRange.e - geoRange.w;
+
+            return coords.map(function (c) {
+                var y = ((geoRange.n - c.lat) / latRange) * cartesianHeight;
+                var x = ((c.long - geoRange.w) / longRange) * cartesianWidth;
                 return {x:x, y:y}
             });
-
-            return cartesian;
         }
 
 
